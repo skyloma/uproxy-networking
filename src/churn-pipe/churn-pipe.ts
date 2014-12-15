@@ -117,6 +117,7 @@ module Churn {
      * The message is obfuscated before it hits the wire.
      */
     public sendTo = (buffer:ArrayBuffer, to:freedom_ChurnPipe.Endpoint) => {
+      log.debug('sendTo(' + buffer.byteLength + ' bytes, ' + to.address + ':' + to.port + ')');
       var transformedBuffer = this.transformer_.transform(buffer);
       return this.socket_.sendTo(
         transformedBuffer,
@@ -142,6 +143,7 @@ module Churn {
     private onData_ = (recvFromInfo:freedom_UdpSocket.RecvFromInfo) => {
       var transformedBuffer = recvFromInfo.data;
       var buffer = this.transformer_.restore(transformedBuffer);
+      log.debug('onData_(' + buffer.byteLength + ' bytes, ' + recvFromInfo.address + ':' + recvFromInfo.port + ')');
       this.dispatchEvent_('message', {
         data: buffer,
         source: {
