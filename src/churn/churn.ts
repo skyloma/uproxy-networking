@@ -292,7 +292,7 @@ module Churn {
             natEndpoints.internal.port,
             remoteEndpoint.address,
             remoteEndpoint.port,
-            'fte',
+/*            'fte',
             ArrayBuffers.stringToArrayBuffer('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF'),
             JSON.stringify({
               'plaintext_dfa': regex2dfa('^.*$'),
@@ -301,6 +301,7 @@ module Churn {
               'ciphertext_dfa': regex2dfa('^.*$'),
               'ciphertext_max_len': 1450
             }))
+*/      'none', undefined, undefined)
         .then(() => {
           log.info('configured obfuscating pipe: ' +
               natEndpoints.internal.address + ':' +
