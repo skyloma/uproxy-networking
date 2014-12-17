@@ -9,7 +9,7 @@ var log :Logging.Log = new Logging.Log('copypaste churn chat');
 
 var pc = new Churn.Connection({
   webrtcPcConfig: {
-    iceServers: [{urls: ['stun:172.26.0.189']}]
+    iceServers: [{urls: ['stun:172.26.0.189', 'stun:stun.services.mozilla.com']}]
   }
 });
 
