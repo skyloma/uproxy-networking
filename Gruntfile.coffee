@@ -328,6 +328,19 @@ module.exports = (grunt) ->
             {path: 'build/tcp/integration.*', include: false}
           ]
           keepBrowser: false
+      integrationTests:
+        options:
+          template: 'node_modules/freedom-for-chrome/spec/helper/'
+          spec: ['build/integration-tests/**.integration.spec.js']
+          helper: [
+            {path: 'build/freedom/freedom-for-chrome.js', include: true}
+            {path: 'build/arraybuffers/arraybuffers.js', include: false}
+            {path: 'build/logging/logging.js', include: false}
+            {path: 'build/handler/queue.js', include: false}
+            {path: 'build/tcp/tcp.js', include: false}
+            {path: 'build/tcp/integration.*', include: false}
+          ]
+          keepBrowser: false
 
     clean: ['build/', 'dist/', '.tscache/']
 
