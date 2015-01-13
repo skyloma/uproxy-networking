@@ -187,6 +187,9 @@ module.exports = (grunt) ->
       simpleSocksFirefoxApp: Rule.typescriptSrc 'samples/simple-socks-firefoxapp'
       copypasteSocksChromeApp: Rule.typescriptSrc 'samples/copypaste-socks-chromeapp'
 
+      integrationTests: Rule.typescriptSrc 'integration-tests/*'
+      integrationTestsSpecDecl: Rule.typescriptSpecDecl 'integration-tests/*'
+
       # Churn.
       turnFrontend: Rule.typescriptSrc 'turn-frontend'
       turnFrontendSpecDecl: Rule.typescriptSpecDecl 'turn-frontend'
@@ -331,16 +334,21 @@ module.exports = (grunt) ->
       integrationTests:
         options:
           template: 'node_modules/freedom-for-chrome/spec/helper/'
-          spec: ['build/integration-tests/**.integration.spec.js']
+          spec: ['build/integration-tests/*/*.integration.spec.js']
           helper: [
             {path: 'build/freedom/freedom-for-chrome.js', include: true}
             {path: 'build/arraybuffers/arraybuffers.js', include: false}
             {path: 'build/logging/logging.js', include: false}
             {path: 'build/handler/queue.js', include: false}
+            {path: 'build/ipaddrjs/ipaddr.min.js', include: false}
+            {path: 'build/rtc-to-net/rtc-to-net.js', include: false}
+            {path: 'build/socks-common/socks-headers.js', include: false}
+            {path: 'build/socks-to-rtc/socks-to-rtc.js', include: false}
             {path: 'build/tcp/tcp.js', include: false}
-            {path: 'build/tcp/integration.*', include: false}
+            {path: 'build/webrtc/*.js', include: false}
+            {path: 'build/integration-tests/*/integration.*', include: false}
           ]
-          keepBrowser: false
+          keepBrowser: true
 
     clean: ['build/', 'dist/', '.tscache/']
 
@@ -623,6 +631,8 @@ module.exports = (grunt) ->
 
   taskManager.add 'integration_test', [
     'build'
+    'ts:integrationTests'
+    'ts:integrationTestsSpecDecl'
     'integration'
   ]
 

@@ -1,4 +1,5 @@
 /// <reference path='../third_party/typings/jasmine/jasmine.d.ts' />
+/// <reference path='socks-headers.d.ts' />
 
 // TODO: add tests for IPv6 address parsing
 describe("socks", function() {
