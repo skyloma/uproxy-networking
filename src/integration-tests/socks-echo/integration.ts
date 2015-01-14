@@ -104,6 +104,59 @@ class ProxyIntegrationTest {
       return Promise.reject(e.message + ' ' + e.stack);
     }
   }
+
+  public parallelEchoTest = (contents:ArrayBuffer[]) : Promise<ArrayBuffer[]> => {
+    try {
+      return Promise.all([this.startSocksPair_(), this.startEchoServer_()])
+          .then((endpoints:Net.Endpoint[]) : Promise<Tcp.Connection> => {
+            var socksEndpoint = endpoints[0];
+            var echoEndpoint = endpoints[1];
+            return this.connectThroughSocks_(socksEndpoint, echoEndpoint);
+          }).then((connection:Tcp.Connection) => {
+            contents.forEach(connection.send);
+            var received :ArrayBuffer[] = [];
+            return new Promise<ArrayBuffer[]>((F, R) => {
+              connection.dataFromSocketQueue.setSyncHandler((echo:ArrayBuffer) => {
+                received.push(echo);
+                if (received.length == contents.length) {
+                  F(received);
+                }
+              });
+            });
+          });
+    } catch (e) {
+      return Promise.reject(e.message + ' ' + e.stack);
+    }
+  }
+
+  public parallelEchoTest = (contents:ArrayBuffer[]) : Promise<ArrayBuffer[]> => {
+    try {
+      return Promise.all([this.startSocksPair_(), this.startEchoServer_()])
+          .then((endpoints:Net.Endpoint[]) : Promise<Tcp.Connection> => {
+            var socksEndpoint = endpoints[0];
+            var echoEndpoint = endpoints[1];
+            return this.connectThroughSocks_(socksEndpoint, echoEndpoint);
+          }).then((connection:Tcp.Connection) => {
+            var received :ArrayBuffer[] = [];
+            return new Promise<ArrayBuffer[]>((F, R) => {
+              var step = (echo?:ArrayBuffer) => {
+                if (echo) {
+                  received.push(echo);
+                }
+                if (received.length == contents.length) {
+                  F(received);
+                  return;
+                }
+                connection.send(contents[received.length]);
+                connection.receiveNext().then(step);
+              };
+              step();
+            });
+          });
+    } catch (e) {
+      return Promise.reject(e.message + ' ' + e.stack);
+    }
+  }
 }
 
 interface Freedom {

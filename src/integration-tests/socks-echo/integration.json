@@ -25,6 +25,16 @@
         "type": "method",
         "value": ["buffer"],
         "ret": "buffer"
+      },
+      "parallelEchoTest": {
+        "type": "method",
+        "value": [["array", "buffer"]],
+        "ret": ["array", "buffer"]
+      },
+      "serialEchoTest": {
+        "type": "method",
+        "value": [["array", "buffer"]],
+        "ret": ["array", "buffer"]
       }
     }
   },

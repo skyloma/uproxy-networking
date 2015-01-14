@@ -32,4 +32,46 @@ describe('proxy integration tests', function() {
       expect(e).toBeUndefined();
     }).then(done);
   });
+
+  it('run multiple echo tests in parallel', (done) => {
+    var testStrings = [
+      'foo',
+      'bar',
+      'longer string',
+      '1',
+      'that seems like enough'
+    ];
+    var testBuffers = testStrings.map(str2ab);
+    var testArrays = testBuffers.map((b) => { return new Uint8Array(b); });
+    testModule.parallelEchoTest(testBuffers).then((outputs:ArrayBuffer[]) => {
+      var outputArrays = outputs.map((b) => { return new Uint8Array(b); });
+      // The responses may be out of order, so we can't just compare directly.
+      // This could be algorithmically faster using sorting, but I'm not sure
+      // that comparison will work as expected for Uint8Arrays.
+      testArrays.forEach((testArray) => {
+        expect(outputArrays).toContain(testArray);
+      });
+    }).catch((e:any) => {
+      expect(e).toBeUndefined();
+    }).then(done);
+  });
+
+  it('run multiple echo tests in series', (done) => {
+    var testStrings = [
+      'foo',
+      'bar',
+      'longer string',
+      '1',
+      'that seems like enough'
+    ];
+    var testBuffers = testStrings.map(str2ab);
+    var testArrays = testBuffers.map((b) => { return new Uint8Array(b); });
+    testModule.parallelEchoTest(testBuffers).then((outputs:ArrayBuffer[]) => {
+      var outputArrays = outputs.map((b) => { return new Uint8Array(b); });
+      // Order should be preserved in this test.
+      expect(outputArrays).toEqual(testArrays);
+    }).catch((e:any) => {
+      expect(e).toBeUndefined();
+    }).then(done);
+  });
 });
