@@ -77,8 +77,14 @@ class ProxyIntegrationTest {
       connection.send(Socks.composeRequestBuffer(request));
       return connection.receiveNext();
     }).then((buffer:ArrayBuffer) : Tcp.Connection => {
-      var expectedBuffer = Socks.composeRequestResponse(webEndpoint);
-      this.assertEqual_(buffer, expectedBuffer, 'compose request');
+      var responseEndpoint = Socks.interpretRequestResponse(buffer);
+      if (responseEndpoint.address != webEndpoint.address) {
+        throw new Error('unexpected address: ' + responseEndpoint.address);
+      }
+      if (responseEndpoint.port != webEndpoint.port) {
+        throw new Error('response indicates incorrect port: ' +
+                        responseEndpoint.port);
+      }
       return connection;
     });
   }
@@ -96,20 +102,6 @@ class ProxyIntegrationTest {
           });
     } catch (e) {
       return Promise.reject(e.message + ' ' + e.stack);
-    }
-  }
-
-  private assertEqual_ = (a:ArrayBuffer, b:ArrayBuffer, tag:string) : void => {
-    if (a.byteLength != b.byteLength) {
-      throw new Error(tag + ': length mismatch: ' +
-                      a.byteLength + ' != ' + b.byteLength);
-    }
-    var aBytes = new Uint8Array(a);
-    var bBytes = new Uint8Array(b);
-    for (var i = 0; i < aBytes.length; ++i) {
-      if (aBytes[i] != bBytes[i]) {
-        throw new Error(tag + ': content mismatch at byte ' + i);
-      }
     }
   }
 }
