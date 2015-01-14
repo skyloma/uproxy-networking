@@ -6,8 +6,18 @@
 // when we call "run".
 describe('proxy integration tests', function() {
   var testModule :any;
+
+  var str2ab = (s:string) : ArrayBuffer => {
+    var byteArray = new Uint8Array(s.length);
+    for (var i = 0; i < s.length; ++i) {
+      byteArray[i] = s.charCodeAt(i);
+    }
+    return byteArray.buffer;
+  };
+
   beforeEach(function(done) {
-    freedom('scripts/build/integration-tests/socks-echo/integration.json', { 'debug': 'log' })
+    freedom('scripts/build/integration-tests/socks-echo/integration.json',
+            { 'debug': 'log' })
         .then((interface:any) => {
           testModule = interface();
           done();
@@ -15,6 +25,11 @@ describe('proxy integration tests', function() {
   });
 
   it('run a simple echo test', (done) => {
-    testModule.run().then(done, (e:Error) => { throw e; });
+    var input = str2ab('arbitrary test string');
+    testModule.singleEchoTest(input).then((output:ArrayBuffer) => {
+      expect(new Uint8Array(output)).toEqual(new Uint8Array(input));
+    }).catch((e:any) => {
+      expect(e).toBeUndefined();
+    }).then(done);
   });
 });

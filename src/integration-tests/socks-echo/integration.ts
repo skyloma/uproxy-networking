@@ -35,10 +35,12 @@ class ProxyIntegrationTest {
     };
     var socksToRtcPcConfig :WebRtc.PeerConnectionConfig = {
       webrtcPcConfig: {iceServers: []},
+      peerName: 'socks-to-rtc',  // Required because crypto.randomUint32 is not defined.
       initiateConnection: true
     };
     var rtcToNetPcConfig :WebRtc.PeerConnectionConfig = {
       webrtcPcConfig: {iceServers: []},
+      peerName: 'rtc-to-net',
       initiateConnection: false
     };
     var rtcToNetProxyConfig :RtcToNet.ProxyConfig = {
@@ -49,16 +51,20 @@ class ProxyIntegrationTest {
     this.rtcToNet_ = new RtcToNet.RtcToNet(rtcToNetPcConfig, rtcToNetProxyConfig);
     this.socksToRtc_.on('signalForPeer', this.rtcToNet_.handleSignalFromPeer);
     this.rtcToNet_.signalsForPeer.setSyncHandler(this.socksToRtc_.handleSignalFromPeer);
-    return this.socksToRtc_.start(socksToRtcEndpoint, socksToRtcPcConfig)
+    return this.socksToRtc_.start(socksToRtcEndpoint, socksToRtcPcConfig);
   }
 
   // Assumes webEndpoint is IPv4.
   private connectThroughSocks_ = (socksEndpoint:Net.Endpoint, webEndpoint:Net.Endpoint) : Promise<Tcp.Connection> => {
     var connection = new Tcp.Connection({endpoint: socksEndpoint});
-    var authRequest = Socks.composeAuthHandshake([Socks.Auth.NOAUTH]);
-    connection.send(authRequest.buffer);
+    var authRequest = Socks.composeAuthHandshakeBuffer([Socks.Auth.NOAUTH]);
+    connection.send(authRequest);
     return connection.receiveNext().then((buffer:ArrayBuffer) : Promise<ArrayBuffer> => {
-      var auth = Socks.interpretAuthResponse(new Uint8Array(buffer));
+      var auth = Socks.interpretAuthResponse(buffer);
+      if (auth != Socks.Auth.NOAUTH) {
+        throw new Error('Unexpected auth value: ' + auth);
+      }
+
       var request :Socks.Request = {
         version: Socks.VERSION5,
         command: Socks.Command.TCP_CONNECT,
@@ -68,60 +74,50 @@ class ProxyIntegrationTest {
           addressByteLength: 7
         }
       };
-
-      connection.send(Socks.composeRequest(request).buffer);
+      connection.send(Socks.composeRequestBuffer(request));
       return connection.receiveNext();
     }).then((buffer:ArrayBuffer) : Tcp.Connection => {
       var expectedBuffer = Socks.composeRequestResponse(webEndpoint);
-      var byteArray = new Uint8Array(buffer);
-      var expectedByteArray = new Uint8Array(expectedBuffer);
-      if (byteArray.byteLength != expectedByteArray.byteLength) {
-        throw new Error('Wrong length connection request response');
-      }
-      for (var i = 0; i < byteArray.byteLength; ++i) {
-        if (byteArray[i] != expectedByteArray[i]) {
-          throw new Error('Response does not equal expected');
-        }
-      }
+      this.assertEqual_(buffer, expectedBuffer, 'compose request');
       return connection;
     });
   }
 
-  public run = () : Promise<void> => {
-/*
-    var arbitraryContents :string = 'Arbitrary contents string';
-    var arbitraryArray = new Uint8Array(arbitraryContents.length);
-    for (var i = 0; i < arbitraryContents.length; ++i) {
-      arbitraryArray[i] = arbitraryContents.charCodeAt(i);
+  public singleEchoTest = (contents:ArrayBuffer) : Promise<ArrayBuffer> => {
+    try {
+      return Promise.all([this.startSocksPair_(), this.startEchoServer_()])
+          .then((endpoints:Net.Endpoint[]) : Promise<Tcp.Connection> => {
+            var socksEndpoint = endpoints[0];
+            var echoEndpoint = endpoints[1];
+            return this.connectThroughSocks_(socksEndpoint, echoEndpoint);
+          }).then((connection:Tcp.Connection) => {
+            connection.send(contents);
+            return connection.receiveNext();
+          });
+    } catch (e) {
+      return Promise.reject(e.message + ' ' + e.stack);
     }
-    return Promise.all([this.startSocksPair_(), this.startEchoServer_()])
-        .then((endpoints:Net.Endpoint[]) : Promise<Tcp.Connection> => {
-          var socksEndpoint = endpoints[0];
-          var echoEndpoint = endpoints[1];
-          return this.connectThroughSocks_(socksEndpoint, echoEndpoint);
-        }).then((connection:Tcp.Connection) => {
-          connection.send(arbitraryArray.buffer);
-          return connection.receiveNext();
-        }).then((receivedBuffer:ArrayBuffer) => {
-          var receivedArray = new Uint8Array(receivedBuffer);
-          if (receivedArray.byteLength != arbitraryArray.byteLength) {
-            throw new Error('Wrong echo length');
-          }
-          for (var i = 0; i < receivedArray.byteLength; ++i) {
-            if (receivedArray[i] != arbitraryArray[i]) {
-              throw new Error('Wrong echo contents');
-            }
-          }
-        });
-*/
-    return Promise.resolve<void>();
+  }
+
+  private assertEqual_ = (a:ArrayBuffer, b:ArrayBuffer, tag:string) : void => {
+    if (a.byteLength != b.byteLength) {
+      throw new Error(tag + ': length mismatch: ' +
+                      a.byteLength + ' != ' + b.byteLength);
+    }
+    var aBytes = new Uint8Array(a);
+    var bBytes = new Uint8Array(b);
+    for (var i = 0; i < aBytes.length; ++i) {
+      if (aBytes[i] != bBytes[i]) {
+        throw new Error(tag + ': content mismatch at byte ' + i);
+      }
+    }
   }
 }
 
 interface Freedom {
-  ProxyIntegrationTest() : {providePromises: (a:new (f:any) => ProxyIntegrationTest) => void};
+  providePromises: (a:new (f:any) => ProxyIntegrationTest) => void;
 };
 
 if (typeof freedom !== 'undefined') {
-  freedom.ProxyIntegrationTest().providePromises(ProxyIntegrationTest);
+  freedom().providePromises(ProxyIntegrationTest);
 }

@@ -21,9 +21,10 @@
   "default": "ProxyIntegrationTest",
   "api": {
     "ProxyIntegrationTest": {
-      "run": {
+      "singleEchoTest": {
         "type": "method",
-        "value": []
+        "value": ["buffer"],
+        "ret": "buffer"
       }
     }
   },
