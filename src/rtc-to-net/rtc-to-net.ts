@@ -230,7 +230,7 @@ module RtcToNet {
           this.tcpConnection_.onceClosed.then(this.fulfillStopping_);
           return this.tcpConnection_.onceConnected;
         })
-        .then(this.replyToPeer_);
+        .then(this.reportSuccessToPeer_, this.reportFailureToPeer_);
       this.onceReady.then(this.linkTcpAndPeerConnectionData_);
 
       this.onceReady.catch(this.fulfillStopping_);
@@ -302,9 +302,7 @@ module RtcToNet {
 
     // Fulfills once the connected endpoint has been returned to the SOCKS client.
     // Rejects if the endpoint cannot be sent to the SOCKS client.
-    private replyToPeer_ = (info:Tcp.ConnectionInfo) : Promise<void> => {
-      var reply :Socks.Reply = this.isAllowedAddress_(info.remote.address) ?
-          Socks.Reply.SUCCEEDED : Socks.Reply.NOT_ALLOWED;
+    private replyToPeer_ = (info:Tcp.ConnectionInfo, reply:Socks.Reply) : Promise<void> => {
       var response :Socks.Response = {
         reply: reply,
         endpoint: info.bound
@@ -316,6 +314,35 @@ module RtcToNet {
           this.stop();
         }
       });
+    }
+
+    private reportSuccessToPeer_ = (info:Tcp.ConnectionInfo) : Promise<void> => {
+      var reply :Socks.Reply = this.isAllowedAddress_(info.remote.address) ?
+          Socks.Reply.SUCCEEDED : Socks.Reply.NOT_ALLOWED;
+      return this.replyToPeer_(info, reply);
+    }
+
+    private reportFailureToPeer_ = (e:any) : Promise<void> => {
+      // Security bug: The remote user can essentially portscan the local network
+      // by using local-resolving DNS names and observing the difference between
+      // NOT_ALLOWED and CONNECTION_REFUSED.
+      var reply :Socks.Reply = Socks.Reply.FAILURE;
+      if (e.errcode == 'TIMED_OUT') {
+        reply = Socks.Reply.TTL_EXPIRED;
+      } else if (e.errcode == 'NETWORK_CHANGED') {
+        reply = Socks.Reply.NETWORK_UNREACHABLE;
+      } else if (e.errcode == 'CONNECTION_RESET' ||
+                 e.errcode == 'CONNECTION_REFUSED') {
+        reply = Socks.Reply.CONNECTION_REFUSED;
+      }
+      // TODO: report real info in cases where a port was bound.
+      var fakeInfo :Tcp.ConnectionInfo = {
+        bound: {
+          address : '0.0.0.0',
+          port: 0
+        }
+      };
+      this.replyToPeer_(fakeInfo, reply);
     }
 
     // Assumes that |receiveEndpointFromPeer| and |getTcpConnection_|
