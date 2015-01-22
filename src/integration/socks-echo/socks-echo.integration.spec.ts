@@ -172,7 +172,7 @@ describe('proxy integration tests', function() {
 
   // This test is disabled because it times out instead of returning an error.
   // TODO: Re-enable when fixing https://github.com/uProxy/uproxy/issues/800
-  xit('run a localhost-resolving DNS name echo test while localhost is blocked.', (done) => {
+  it('run a localhost-resolving DNS name echo test while localhost is blocked.', (done) => {
     // Get a test module with one that doesn't allow localhost access.
     getTestModule(true).then((testModule:any) => {
       return testModule.startEchoServer().then((port:number) => {
@@ -195,7 +195,7 @@ describe('proxy integration tests', function() {
 
   // Disabled because CONNECTION_REFUSED is not yet implemented in RtcToNet.
   // Tracked by https://github.com/uProxy/uproxy/issues/800
-  xit('attempt to connect to a nonexistent echo daemon', (done) => {
+  it('attempt to connect to a nonexistent echo daemon', (done) => {
     getTestModule(true).then((testModule:any) => {
       return testModule.connect(1023);  // 1023 is a reserved port.
     }).then((connectionId:string) => {
@@ -207,7 +207,7 @@ describe('proxy integration tests', function() {
   });
 
   // Disabled because HOST_UNREACHABLE is not yet implemented in RtcToNet.
-  xit('attempt to connect to a nonexistent DNS name', (done) => {
+  it('attempt to connect to a nonexistent DNS name', (done) => {
     getTestModule(true).then((testModule:any) => {
       return testModule.connect(80, 'www.nonexistentdomain.gov');
     }).then((connectionId:string) => {
@@ -219,7 +219,7 @@ describe('proxy integration tests', function() {
   });
 
   // Disabled because HOST_UNREACHABLE is not yet implemented in RtcToNet.
-  xit('attempt to connect to a nonexistent IP address', (done) => {
+  it('attempt to connect to a nonexistent IP address', (done) => {
     getTestModule(true).then((testModule:any) => {
       // 192.0.2.0/24 is a reserved IP address range.
       return testModule.connect(80, '192.0.2.111');

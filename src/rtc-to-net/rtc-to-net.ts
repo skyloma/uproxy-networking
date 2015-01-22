@@ -338,11 +338,15 @@ module RtcToNet {
       // TODO: report real info in cases where a port was bound.
       var fakeInfo :Tcp.ConnectionInfo = {
         bound: {
-          address : '0.0.0.0',
+          address: '0.0.0.0',
           port: 0
+        },
+        remote: {
+          address: '',
+          port: -1
         }
       };
-      this.replyToPeer_(fakeInfo, reply);
+      return this.replyToPeer_(fakeInfo, reply);
     }
 
     // Assumes that |receiveEndpointFromPeer| and |getTcpConnection_|
