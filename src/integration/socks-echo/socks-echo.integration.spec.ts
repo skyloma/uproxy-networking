@@ -170,8 +170,6 @@ describe('proxy integration tests', function() {
     }).then(done);
   });
 
-  // This test is disabled because it times out instead of returning an error.
-  // TODO: Re-enable when fixing https://github.com/uProxy/uproxy/issues/800
   it('run a localhost-resolving DNS name echo test while localhost is blocked.', (done) => {
     // Get a test module with one that doesn't allow localhost access.
     getTestModule(true).then((testModule:any) => {
@@ -193,8 +191,6 @@ describe('proxy integration tests', function() {
     }).then(done);
   });
 
-  // Disabled because CONNECTION_REFUSED is not yet implemented in RtcToNet.
-  // Tracked by https://github.com/uProxy/uproxy/issues/800
   it('attempt to connect to a nonexistent echo daemon', (done) => {
     getTestModule(true).then((testModule:any) => {
       return testModule.connect(1023);  // 1023 is a reserved port.
@@ -206,25 +202,12 @@ describe('proxy integration tests', function() {
     }).then(done);
   });
 
-  // Disabled because HOST_UNREACHABLE is not yet implemented in RtcToNet.
-  it('attempt to connect to a nonexistent DNS name', (done) => {
+  // Disabled because HOST_UNREACHABLE is not yet exposed in the core.tcpsocket API.
+  xit('attempt to connect to a nonexistent DNS name', (done) => {
     getTestModule(true).then((testModule:any) => {
       return testModule.connect(80, 'www.nonexistentdomain.gov');
     }).then((connectionId:string) => {
       // This code should not run, because there is no such DNS name.
-      expect(connectionId).toBeUndefined();
-    }).catch((e:any) => {
-      expect(e.reply).toEqual(Socks.Reply.HOST_UNREACHABLE);
-    }).then(done);
-  });
-
-  // Disabled because HOST_UNREACHABLE is not yet implemented in RtcToNet.
-  it('attempt to connect to a nonexistent IP address', (done) => {
-    getTestModule(true).then((testModule:any) => {
-      // 192.0.2.0/24 is a reserved IP address range.
-      return testModule.connect(80, '192.0.2.111');
-    }).then((connectionId:string) => {
-      // This code should not run, because this is a reserved IP address.
       expect(connectionId).toBeUndefined();
     }).catch((e:any) => {
       expect(e.reply).toEqual(Socks.Reply.HOST_UNREACHABLE);
