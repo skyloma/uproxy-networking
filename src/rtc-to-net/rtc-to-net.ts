@@ -223,8 +223,11 @@ module RtcToNet {
     // Returns onceReady.
     public start = () : Promise<void> => {
       this.onceReady = this.receiveEndpointFromPeer_()
-        .then(this.getTcpConnection_)
-        .then((tcpConnection:Tcp.Connection) => {
+        .then(this.getTcpConnection_,
+            (e:Error) => {
+          this.replyToPeer_(Socks.Reply.UNSUPPORTED_COMMAND);
+          throw e;
+        }).then((tcpConnection:Tcp.Connection) => {
           this.tcpConnection_ = tcpConnection;
           // Shutdown once the TCP connection terminates.
           this.tcpConnection_.onceClosed.then(this.fulfillStopping_);
@@ -302,7 +305,18 @@ module RtcToNet {
 
     // Fulfills once the connected endpoint has been returned to the SOCKS client.
     // Rejects if the endpoint cannot be sent to the SOCKS client.
-    private replyToPeer_ = (info:Tcp.ConnectionInfo, reply:Socks.Reply) : Promise<void> => {
+    private replyToPeer_ = (reply:Socks.Reply, info?:Tcp.ConnectionInfo) : Promise<void> => {
+      var fakeInfo :Tcp.ConnectionInfo = {
+        bound: {
+          address: '0.0.0.0',
+          port: 0
+        },
+        remote: {
+          address: '',
+          port: -1
+        }
+      };
+      info = info || fakeInfo;
       var response :Socks.Response = {
         reply: reply,
         endpoint: info.bound
@@ -319,7 +333,7 @@ module RtcToNet {
     private reportSuccessToPeer_ = (info:Tcp.ConnectionInfo) : Promise<void> => {
       var reply :Socks.Reply = this.isAllowedAddress_(info.remote.address) ?
           Socks.Reply.SUCCEEDED : Socks.Reply.NOT_ALLOWED;
-      return this.replyToPeer_(info, reply);
+      return this.replyToPeer_(reply, info);
     }
 
     private reportFailureToPeer_ = (e:any) : Promise<void> => {
@@ -336,17 +350,7 @@ module RtcToNet {
         reply = Socks.Reply.CONNECTION_REFUSED;
       }
       // TODO: report real info in cases where a port was bound.
-      var fakeInfo :Tcp.ConnectionInfo = {
-        bound: {
-          address: '0.0.0.0',
-          port: 0
-        },
-        remote: {
-          address: '',
-          port: -1
-        }
-      };
-      return this.replyToPeer_(fakeInfo, reply);
+      return this.replyToPeer_(reply);
     }
 
     // Assumes that |receiveEndpointFromPeer| and |getTcpConnection_|
