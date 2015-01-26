@@ -15,7 +15,7 @@ describe('proxy integration tests', function() {
 
   // The default TCP SYN timeout is two minutes, so to be safe we
   // set a test timeout of four minutes.
-  jasmine.DEFAULT_TIMEOUT_INTERVAL = 240000;
+  (<any>jasmine).DEFAULT_TIMEOUT_INTERVAL = 240000;
 
   it('attempt to connect to a nonexistent IP address', (done) => {
     getTestModule(true).then((testModule:any) => {
