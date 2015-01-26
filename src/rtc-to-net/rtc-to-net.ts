@@ -306,20 +306,14 @@ module RtcToNet {
     // Fulfills once the connected endpoint has been returned to the SOCKS client.
     // Rejects if the endpoint cannot be sent to the SOCKS client.
     private replyToPeer_ = (reply:Socks.Reply, info?:Tcp.ConnectionInfo) : Promise<void> => {
-      var fakeInfo :Tcp.ConnectionInfo = {
-        bound: {
-          address: '0.0.0.0',
-          port: 0
-        },
-        remote: {
-          address: '',
-          port: -1
-        }
+      var fakeBoundAddress :Net.Endpoint = {
+        address: '0.0.0.0',
+        port: 0
       };
-      info = info || fakeInfo;
+      var boundAddress = info ? info.bound : fakeBoundAddress;
       var response :Socks.Response = {
         reply: reply,
-        endpoint: info.bound
+        endpoint: boundAddress
       };
       return this.dataChannel_.send({
         str: JSON.stringify(response)
