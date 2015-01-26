@@ -334,6 +334,7 @@ module RtcToNet {
       // Security bug: The remote user can essentially portscan the local network
       // by using local-resolving DNS names and observing the difference between
       // NOT_ALLOWED and CONNECTION_REFUSED.
+      // A fix is blocked by https://github.com/uProxy/uproxy/issues/803.
       var reply :Socks.Reply = Socks.Reply.FAILURE;
       if (e.errcode == 'TIMED_OUT') {
         reply = Socks.Reply.TTL_EXPIRED;
@@ -344,6 +345,7 @@ module RtcToNet {
         reply = Socks.Reply.CONNECTION_REFUSED;
       }
       // TODO: report real info in cases where a port was bound.
+      // Blocked by https://github.com/uProxy/uproxy/issues/803
       return this.replyToPeer_(reply);
     }
 
