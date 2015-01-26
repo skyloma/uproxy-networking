@@ -310,7 +310,11 @@ module RtcToNet {
         address: '0.0.0.0',
         port: 0
       };
-      var boundAddress = info ? info.bound : fakeBoundAddress;
+      var boundAddress :Net.Endpoint = (info && info.bound) || fakeBoundAddress;
+      if (info && info.remote && info.remote.address &&
+          !this.isAllowedAddress_(info.remote.address)) {
+        reply = Socks.Reply.NOT_ALLOWED;
+      }
       var response :Socks.Response = {
         reply: reply,
         endpoint: boundAddress
@@ -325,16 +329,10 @@ module RtcToNet {
     }
 
     private reportSuccessToPeer_ = (info:Tcp.ConnectionInfo) : Promise<void> => {
-      var reply :Socks.Reply = this.isAllowedAddress_(info.remote.address) ?
-          Socks.Reply.SUCCEEDED : Socks.Reply.NOT_ALLOWED;
-      return this.replyToPeer_(reply, info);
+      return this.replyToPeer_(Socks.Reply.SUCCEEDED, info);
     }
 
     private reportFailureToPeer_ = (e:any) : Promise<void> => {
-      // Security bug: The remote user can essentially portscan the local network
-      // by using local-resolving DNS names and observing the difference between
-      // NOT_ALLOWED and CONNECTION_REFUSED.
-      // A fix is blocked by https://github.com/uProxy/uproxy/issues/803.
       var reply :Socks.Reply = Socks.Reply.FAILURE;
       if (e.errcode == 'TIMED_OUT') {
         reply = Socks.Reply.TTL_EXPIRED;
@@ -344,9 +342,10 @@ module RtcToNet {
                  e.errcode == 'CONNECTION_REFUSED') {
         reply = Socks.Reply.CONNECTION_REFUSED;
       }
-      // TODO: report real info in cases where a port was bound.
-      // Blocked by https://github.com/uProxy/uproxy/issues/803
-      return this.replyToPeer_(reply);
+      return this.tcpConnection_.getInfo().then((info:Tcp.ConnectionInfo) => {
+        console.log(Socks.Reply[reply], info);
+        return this.replyToPeer_(reply, info);
+      });
     }
 
     // Assumes that |receiveEndpointFromPeer| and |getTcpConnection_|

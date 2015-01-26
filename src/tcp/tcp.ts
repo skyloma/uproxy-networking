@@ -384,15 +384,23 @@ module Tcp {
     public getInfo = () : Promise<ConnectionInfo> => {
       return this.connectionSocket_.getInfo().then(
           (info:freedom_TcpSocket.SocketInfo) : ConnectionInfo => {
-        return {
-          bound: {
+        var boundEndpoint :Net.Endpoint = null;
+        var remoteEndpoint :Net.Endpoint = null;
+        if (info.localAddress) {
+          boundEndpoint = {
             address: info.localAddress,
             port: info.localPort
-          },
-          remote: {
+          };
+        }
+        if (info.peerAddress) {
+          remoteEndpoint = {
             address: info.peerAddress,
             port: info.peerPort
           }
+        }
+        return {
+          bound: boundEndpoint,
+          remote: remoteEndpoint
         };
       });
     }
