@@ -91,6 +91,7 @@ declare module Tcp {
 
     public connectionId: string;
     public getState :() => Connection.State;
+    public getInfo :() => Promise<ConnectionInfo>
     public isClosed :() => boolean;
 
     public toString :() => string;

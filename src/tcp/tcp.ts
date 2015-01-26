@@ -29,20 +29,6 @@ module Tcp {
   // new ones.
   var DEFAULT_MAX_CONNECTIONS = 1048576;
 
-  function endpointOfSocketInfo(info:freedom_TcpSocket.SocketInfo)
-      : ConnectionInfo {
-     return {
-       bound: {
-         address: info.localAddress,
-         port: info.localPort
-       },
-       remote: {
-         address: info.peerAddress,
-         port: info.peerPort
-       }
-     };
-  }
-
   // A static helper function to close a freedom socket object and then
   // appropriately deallocate it's interface object.
   function destroyFreedomSocket_(socket:freedom_TcpSocket.Socket)
@@ -286,8 +272,7 @@ module Tcp {
         // So we get a handler to the old freedom socket.
         this.connectionSocket_ =
             freedom['core.tcpsocket'](connectionKind.existingSocketId);
-        this.onceConnected =
-            this.connectionSocket_.getInfo().then(endpointOfSocketInfo);
+        this.onceConnected = this.getInfo();
         this.state_ = Connection.State.CONNECTED;
         this.connectionId = this.connectionId + '.A' +
             connectionKind.existingSocketId;
@@ -298,8 +283,7 @@ module Tcp {
             this.connectionSocket_
                 .connect(connectionKind.endpoint.address,
                          connectionKind.endpoint.port)
-                .then(this.connectionSocket_.getInfo)
-                .then(endpointOfSocketInfo)
+                .then(this.getInfo);
         this.state_ = Connection.State.CONNECTING;
         this.onceConnected
             .then(() => {
@@ -397,6 +381,21 @@ module Tcp {
     public getState = () : Connection.State => {
       return this.state_;
     };
+    public getInfo = () : Promise<ConnectionInfo> => {
+      return this.connectionSocket_.getInfo().then(
+          (info:freedom_TcpSocket.SocketInfo) : ConnectionInfo => {
+        return {
+          bound: {
+            address: info.localAddress,
+            port: info.localPort
+          },
+          remote: {
+            address: info.peerAddress,
+            port: info.peerPort
+          }
+        };
+      });
+    }
 
     /**
      * Sends a message that is pre-formatted as an arrayBuffer.
