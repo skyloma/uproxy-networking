@@ -301,12 +301,21 @@ module Tcp {
       } else if (connectionKind.endpoint) {
         // Create a new tcp socket to the given endpoint.
         this.connectionSocket_ = freedom['core.tcpsocket']();
+        // Don't return as "connected" until we have the info about what we're
+        // actually connected to.  We've observed problematic behavior where
+        // large amounts of data are downloaded before getInfo() returns, so
+        // we now pause the socket before asking for the info, and only resume
+        // after the info is returned.
         this.onceConnected =
             this.connectionSocket_
                 .connect(connectionKind.endpoint.address,
                          connectionKind.endpoint.port)
+                .then(this.pause)
                 .then(this.connectionSocket_.getInfo)
-                .then(endpointOfSocketInfo)
+                .then((info) => {
+                  this.resume();
+                  return endpointOfSocketInfo(info);
+                });
         this.state_ = Connection.State.CONNECTING;
         this.onceConnected
             .then(() => {
@@ -379,6 +388,16 @@ module Tcp {
           this.fulfillClosed_(SocketCloseKind.UNKOWN);
         }
       });
+    }
+
+    // Stop receiving packets from the socket and eventually block the sender.
+    public pause = () : Promise<void> => {
+      return this.connectionSocket_.pause();
+    }
+
+    // Start receiving packets again.
+    public resume = () : Promise<void> => {
+      return this.connectionSocket_.resume();
     }
 
     public close = () : Promise<SocketCloseKind> => {
