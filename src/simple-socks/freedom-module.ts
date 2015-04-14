@@ -1,8 +1,6 @@
 /// <reference path='../../../third_party/typings/es6-promise/es6-promise.d.ts' />
 /// <reference path='../../../third_party/freedom-typings/freedom-module-env.d.ts' />
 
-import peerconnection = require('../../../third_party/uproxy-lib/webrtc/peerconnection');
-
 import rtc_to_net = require('../rtc-to-net/rtc-to-net');
 import socks_to_rtc = require('../socks-to-rtc/socks-to-rtc');
 import net = require('../net/net.types');
@@ -19,12 +17,10 @@ export var log :logging.Log = new logging.Log(moduleName);
 export var loggingController = freedom['loggingcontroller']();
 
 // Example to show how to manuall configure console filtering.
-//
-// loggingController.setConsoleFilter([
-//     '*:W',
-//     'SocksToRtc:I',
-//     'RtcToNet:I']);
-
+loggingController.setConsoleFilter([
+    'simple-socks:D',
+    'SocksToRtc:I',
+    'RtcToNet:I']);
 
 //-----------------------------------------------------------------------------
 var localhostEndpoint:net.Endpoint = { address: '127.0.0.1', port:9999 };
@@ -35,20 +31,16 @@ var pcConfig :freedom_RTCPeerConnection.RTCConfiguration = {
                {urls: ['stun:stun1.l.google.com:19302']}]
 };
 
-export var rtcNet = new rtc_to_net.RtcToNet(
-    pcConfig,
-    {
-      allowNonUnicast: true
-    },
-    true); // obfuscate
+export var rtcNet = new rtc_to_net.RtcToNet();
+rtcNet.startFromConfig({ allowNonUnicast: true }, pcConfig, false); // obfuscate
 
 //-----------------------------------------------------------------------------
 export var socksRtc = new socks_to_rtc.SocksToRtc();
 socksRtc.on('signalForPeer', rtcNet.handleSignalFromPeer);
-socksRtc.start(
+socksRtc.startFromConfig(
     localhostEndpoint,
     pcConfig,
-    true) // obfuscate
+    false) // obfuscate
   .then((endpoint:net.Endpoint) => {
     log.info('SocksToRtc listening on: ' + JSON.stringify(endpoint));
     log.info('curl -x socks5h://' + endpoint.address + ':' + endpoint.port +
