@@ -6,8 +6,7 @@ declare module browserified_exports {
 }
 import copypaste = browserified_exports.copypaste;
 
-import I18nUtil = require('../i18n-util.types');
-declare var i18nUtil :I18nUtil;
+import i18nUtil = require('../i18n-util');
 
 Polymer({
   model: copypaste.model,
