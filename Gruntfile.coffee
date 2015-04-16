@@ -87,7 +87,9 @@ taskManager.add 'sampleCopyPasteChurnChatChromeApp', [
 taskManager.add 'sampleCopyPasteSocksChromeApp', [
   'base'
   'copy:libsForCopyPasteSocksChromeApp'
-  'vulcanize:sampleCopyPasteSocksChromeApp'
+  'vulcanize:sampleCopyPasteSocksChromeApp_Inline'
+  'vulcanize:sampleCopyPasteSocksChromeApp_Csp'
+  'browserify:sampleCopyPasteSocksChromeApp_Vulcanize'
   'browserify:copyPasteSocksFreedomModule'
   'browserify:copyPasteSocksChromeApp'
 ]
@@ -478,14 +480,29 @@ module.exports = (grunt) ->
         browserifyIntegrationTest 'integration-tests/socks-echo/slow.core-env'
       # Browserify sample apps main freedom module and core environments
 
+      sampleCopyPasteSocksChromeApp_Vulcanize:
+        src: [ path.join(devBuildPath, 'samples/copypaste-socks-chromeapp/polymer-components/vulcanized.js') ],
+        dest: path.join(devBuildPath, 'samples/copypaste-socks-chromeapp/polymer-components/vulcanized.js'),
+        options: {
+          browserifyOptions: { standalone: 'browserified_exports' }
+        };
+
     vulcanize:
-      sampleCopyPasteSocksChromeApp:
+      sampleCopyPasteSocksChromeApp_Inline:
         options:
           inline: true
-          csp: true
         files: [
           {
             src: path.join(devBuildPath, 'samples/copypaste-socks-chromeapp/polymer-components/root.html')
+            dest: path.join(devBuildPath, 'samples/copypaste-socks-chromeapp/polymer-components/vulcanized-inline.html')
+          }
+        ]
+      sampleCopyPasteSocksChromeApp_Csp:
+        options:
+          csp: true
+        files: [
+          {
+            src: path.join(devBuildPath, 'samples/copypaste-socks-chromeapp/polymer-components/vulcanized-inline.html')
             dest: path.join(devBuildPath, 'samples/copypaste-socks-chromeapp/polymer-components/vulcanized.html')
           }
         ]
